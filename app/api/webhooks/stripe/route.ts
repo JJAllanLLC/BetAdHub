@@ -8,10 +8,13 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Create Supabase admin client inside a function to avoid build-time execution
+function getSupabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
@@ -102,7 +105,7 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
   const priceId = subscription.items.data[0]?.price.id;
 
   // Get user from customer ID
-  const { data: user } = await supabaseAdmin
+  const { data: user } = await getSupabaseAdmin()
     .from('users')
     .select('id')
     .eq('stripe_customer_id', customerId)
@@ -125,7 +128,7 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
   }
 
   // Upsert subscription
-  const { error } = await supabaseAdmin
+  const { error } = await getSupabaseAdmin()
     .from('subscriptions')
     .upsert({
       user_id: user.id,
@@ -145,6 +148,8 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
+  const supabaseAdmin = getSupabaseAdmin();
+  
   // Get subscription record first
   const { data: subData } = await supabaseAdmin
     .from('subscriptions')
@@ -186,7 +191,7 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
   const subscriptionId = invoice.subscription as string;
   if (!subscriptionId) return;
 
-  const { error } = await supabaseAdmin
+  const { error } = await getSupabaseAdmin()
     .from('subscriptions')
     .update({
       status: 'past_due',
