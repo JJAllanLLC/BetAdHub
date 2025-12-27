@@ -1,8 +1,8 @@
 import Stripe from 'stripe';
 
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  // Using stable API version for build compatibility (experimental versions not recognized by TypeScript types)
-  apiVersion: '2024-11-20',
+  // Using '2023-10-16' to match the current package's TypeScript types for successful build
+  apiVersion: '2023-10-16',
   typescript: true,
 });
 
