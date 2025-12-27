@@ -3,8 +3,10 @@ import { stripe } from '@/lib/stripe/server';
 import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
 
-// Force dynamic to prevent build-time prerendering (Supabase env vars not available during build)
+// Force full dynamic rendering to avoid build-time Supabase client creation (env vars not available during build)
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
