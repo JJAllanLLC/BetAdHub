@@ -21,6 +21,7 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <meta name="google-site-verification" content="a_UUuxsoxXxNv4sVs7U5X-JR2mgwC6knVjw5IfbCwkI" />
+        <meta name="google-site-verification" content="kt-T6XGXbdxnj2VoUSDHgTT7kbP6skn-OughhOWO_-4" />
       </head>
       <body className={inter.className}>
         <Header />
