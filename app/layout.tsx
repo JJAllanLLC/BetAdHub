@@ -19,6 +19,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <meta name="google-site-verification" content="a_UUuxsoxXxNv4sVs7U5X-JR2mgwC6knVjw5IfbCwkI" />
+      </head>
       <body className={inter.className}>
         <Header />
         <main className="min-h-screen">{children}</main>
