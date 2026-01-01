@@ -54,11 +54,7 @@ export function BannerCarousel() {
   }
 
   if (banners.length === 0) {
-    return (
-      <div className="bg-gray-900 rounded-lg h-64 flex items-center justify-center border border-gray-800">
-        <p className="text-gray-400">No banners available</p>
-      </div>
-    );
+    return null;
   }
 
   const currentBanner = banners[currentIndex];
