@@ -20,6 +20,8 @@ export function BannerCarousel() {
   useEffect(() => {
     async function fetchBanners() {
       const supabase = createClient();
+      
+      // Query approved banner ads (webhook ensures only active subscriptions have approved=true)
       const { data } = await supabase
         .from('ads')
         .select('id, url, banner_image_url, description')
@@ -27,22 +29,27 @@ export function BannerCarousel() {
         .eq('approved', true)
         .order('created_at', { ascending: false });
 
-      if (data) {
-        // Shuffle for random rotation
-        const shuffled = [...data].sort(() => Math.random() - 0.5);
+      if (data && data.length > 0) {
+        // Filter out ads without images and shuffle for random rotation
+        const validBanners = data.filter(b => b.banner_image_url) as Banner[];
+        const shuffled = [...validBanners].sort(() => Math.random() - 0.5);
         setBanners(shuffled);
       }
       setLoading(false);
     }
 
     fetchBanners();
+  }, []);
 
-    // Auto-rotate every 5 seconds
-    const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % Math.max(banners.length, 1));
-    }, 5000);
+  useEffect(() => {
+    if (banners.length > 1) {
+      // Auto-rotate every 9 seconds (between 8-10)
+      const interval = setInterval(() => {
+        setCurrentIndex((prev) => (prev + 1) % banners.length);
+      }, 9000);
 
-    return () => clearInterval(interval);
+      return () => clearInterval(interval);
+    }
   }, [banners.length]);
 
   if (loading) {
@@ -53,8 +60,28 @@ export function BannerCarousel() {
     );
   }
 
+  // Fallback placeholder when no active banners
   if (banners.length === 0) {
-    return null;
+    return (
+      <div className="bg-betting-darker rounded-lg overflow-hidden border border-gray-800">
+        <div className="p-12 md:p-16 text-center">
+          <h3 className="text-2xl md:text-3xl font-bold mb-4">
+            Prime Banner Spot Available – Reach Thousands of Bettors Monthly
+          </h3>
+          <p className="text-gray-300 text-lg mb-6">
+            Dofollow banner ads from $29/month
+          </p>
+          <Link
+            href="https://betadhub.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block bg-betting-green text-betting-darker px-6 py-3 rounded font-semibold hover:opacity-90 transition"
+          >
+            Advertise Here →
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   const currentBanner = banners[currentIndex];
@@ -64,7 +91,7 @@ export function BannerCarousel() {
       <Link
         href={currentBanner.url}
         target="_blank"
-        rel="nofollow sponsored"
+        rel="dofollow"
         className="block relative h-64 md:h-96 rounded-lg overflow-hidden border border-gray-800"
       >
         {currentBanner.banner_image_url ? (

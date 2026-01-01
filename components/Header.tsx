@@ -65,6 +65,9 @@ export function Header() {
               <Link href="/directory" className="text-gray-300 hover:text-betting-green transition">
                 Directory
               </Link>
+              <Link href="/classifieds" className="text-gray-300 hover:text-betting-green transition">
+                Classifieds
+              </Link>
               <Link 
                 href="https://betadhub.com/advertise" 
                 className="text-gray-300 hover:text-betting-green transition"
