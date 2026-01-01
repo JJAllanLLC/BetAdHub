@@ -62,7 +62,10 @@ export function Header() {
             </>
           ) : (
             <>
-              <Link href="/directory" className="text-gray-300 hover:text-betting-green transition">
+              <Link 
+                href="/" 
+                className={`transition ${pathname === '/' ? 'text-betting-green font-semibold underline' : 'text-gray-300 hover:text-betting-green'}`}
+              >
                 Directory
               </Link>
               <Link href="/classifieds" className="text-gray-300 hover:text-betting-green transition">
