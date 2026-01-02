@@ -12,12 +12,14 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
     setSuccess(false);
+    setNeedsConfirmation(false);
 
     const supabase = createClient();
     
@@ -25,6 +27,8 @@ export default function SignupPage() {
     const redirectTo = process.env.NEXT_PUBLIC_SITE_URL 
       ? `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`
       : 'https://betadhub.com/dashboard';
+    
+    console.log('Attempting signup for:', email);
     
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
@@ -34,6 +38,7 @@ export default function SignupPage() {
       },
     });
 
+    // Handle errors
     if (signUpError) {
       console.error('Signup error:', signUpError);
       setError(signUpError.message);
@@ -41,9 +46,14 @@ export default function SignupPage() {
       return;
     }
 
-    console.log('Signup success:', { user: data.user, session: data.session });
+    console.log('Signup response:', { 
+      user: data.user ? { id: data.user.id, email: data.user.email } : null, 
+      session: data.session ? 'exists' : 'null',
+      userCreated: !!data.user,
+      sessionExists: !!data.session
+    });
 
-    // Create user record in public.users table (if user was created)
+    // If user was created, create user record in public.users table
     if (data.user) {
       const { error: userError } = await supabase
         .from('users')
@@ -56,19 +66,32 @@ export default function SignupPage() {
       if (userError) {
         console.error('Error creating user record:', userError);
         // Don't fail the signup if user record creation fails - it might already exist
+      } else {
+        console.log('User record created successfully');
       }
     }
 
-    // If session exists, user is confirmed and logged in - redirect
-    if (data.session) {
-      router.push('/dashboard');
-      router.refresh();
-    } else if (data.user && data.session === null) {
-      // User created but email confirmation required - show "Check email" message
+    // Handle signup result based on session presence
+    if (data.user && data.session) {
+      // User is confirmed and logged in automatically (email confirmation OFF)
+      console.log('User confirmed and logged in, redirecting to dashboard');
       setSuccess(true);
+      setNeedsConfirmation(false);
+      // Give a brief moment for the success message to show, then redirect
+      setTimeout(() => {
+        router.push('/dashboard');
+        router.refresh();
+      }, 500);
+    } else if (data.user && !data.session) {
+      // User created but email confirmation required (email confirmation ON)
+      console.log('User created, email confirmation required');
+      setSuccess(true);
+      setNeedsConfirmation(true);
       setLoading(false);
     } else {
       // This shouldn't happen, but handle gracefully
+      console.warn('Unexpected signup result:', { user: data.user, session: data.session });
+      setError('An unexpected error occurred. Please try again.');
       setLoading(false);
     }
   };
@@ -85,7 +108,10 @@ export default function SignupPage() {
         )}
         {success && (
           <div className="bg-green-900/50 border border-green-500 text-green-200 px-4 py-3 rounded">
-            Check your email to confirm your account.
+            {needsConfirmation 
+              ? 'Check your email to confirm your account.'
+              : 'Welcome! Redirecting to dashboard...'
+            }
           </div>
         )}
 
