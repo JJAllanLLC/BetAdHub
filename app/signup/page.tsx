@@ -26,7 +26,7 @@ export default function SignupPage() {
       ? `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`
       : 'https://betadhub.com/dashboard';
     
-    const { data: authData, error: signUpError } = await supabase.auth.signUp({
+    const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -41,32 +41,34 @@ export default function SignupPage() {
       return;
     }
 
-    console.log('Signup success:', { user: authData.user, session: authData.session });
+    console.log('Signup success:', { user: data.user, session: data.session });
 
-    // Create user record in public.users table
-    if (authData.user) {
+    // Create user record in public.users table (if user was created)
+    if (data.user) {
       const { error: userError } = await supabase
         .from('users')
         .insert({
-          id: authData.user.id,
-          email: authData.user.email!,
+          id: data.user.id,
+          email: data.user.email!,
           role: 'user',
         });
 
       if (userError) {
         console.error('Error creating user record:', userError);
+        // Don't fail the signup if user record creation fails - it might already exist
       }
     }
 
-    // If email confirmation is required, user won't have a session yet
-    // Check if session exists before redirecting
-    if (authData.session) {
+    // If session exists, user is confirmed and logged in - redirect
+    if (data.session) {
       router.push('/dashboard');
       router.refresh();
-    } else {
-      // Email confirmation required - show success message
-      // Supabase will send confirmation email with the emailRedirectTo we specified
+    } else if (data.user && data.session === null) {
+      // User created but email confirmation required - show "Check email" message
       setSuccess(true);
+      setLoading(false);
+    } else {
+      // This shouldn't happen, but handle gracefully
       setLoading(false);
     }
   };
@@ -83,7 +85,7 @@ export default function SignupPage() {
         )}
         {success && (
           <div className="bg-green-900/50 border border-green-500 text-green-200 px-4 py-3 rounded">
-            Please check your email to confirm your account. You will be redirected to the dashboard after confirmation.
+            Check your email to confirm your account.
           </div>
         )}
 
