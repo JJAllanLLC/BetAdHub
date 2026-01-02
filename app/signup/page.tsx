@@ -11,25 +11,37 @@ export default function SignupPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setSuccess(false);
 
     const supabase = createClient();
     
-    // Sign up user
+    // Sign up user with production redirect URL
+    const redirectTo = process.env.NEXT_PUBLIC_SITE_URL 
+      ? `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`
+      : 'https://betadhub.com/dashboard';
+    
     const { data: authData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        emailRedirectTo: redirectTo,
+      },
     });
 
     if (signUpError) {
+      console.error('Signup error:', signUpError);
       setError(signUpError.message);
       setLoading(false);
       return;
     }
+
+    console.log('Signup success:', { user: authData.user, session: authData.session });
 
     // Create user record in public.users table
     if (authData.user) {
@@ -46,8 +58,17 @@ export default function SignupPage() {
       }
     }
 
-    router.push('/dashboard');
-    router.refresh();
+    // If email confirmation is required, user won't have a session yet
+    // Check if session exists before redirecting
+    if (authData.session) {
+      router.push('/dashboard');
+      router.refresh();
+    } else {
+      // Email confirmation required - show success message
+      // Supabase will send confirmation email with the emailRedirectTo we specified
+      setSuccess(true);
+      setLoading(false);
+    }
   };
 
   return (
@@ -58,6 +79,11 @@ export default function SignupPage() {
         {error && (
           <div className="bg-red-900/50 border border-red-500 text-red-200 px-4 py-3 rounded">
             {error}
+          </div>
+        )}
+        {success && (
+          <div className="bg-green-900/50 border border-green-500 text-green-200 px-4 py-3 rounded">
+            Please check your email to confirm your account. You will be redirected to the dashboard after confirmation.
           </div>
         )}
 
